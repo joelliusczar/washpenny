@@ -1,0 +1,19 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=733558
+	// for the documentation about the tasks.json format
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Set unit test env",
+			"type": "shell",
+			"command": ". ./wspn_dev_opssh && setup_unit_test_env",
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "silent",
+				"close": true
+			},
+		},
+
+
+	]
+}

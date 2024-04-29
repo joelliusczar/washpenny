@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created"
+    />
+    <link href="/global.css" rel="stylesheet"></link>
+    <title>What is the robot reading?</title>
+  </head>
+  <body>
+    <div id="content">
+      <p class="today">Today on <span></span>, the robot is reading</p>
+      <ul id="readings"></ul>
+      <div class="story">
+        <p>
+          The robot has been reading the bible since Jan 1, 2000
+          (or so they claim).
+        </p>
+        <p>
+          Everyday they read a chapter from the old testament,
+          the new testament, and a chapter from Psalms/Proverbs.
+        </p>
+        <p>
+          The robot is not a huge fan of reading plans.
+          They just ended up rereading
+          Genesis and Matthew over and over again for each time they restarted.
+        </p>
+        <p>
+          The robot is always happy for any to join in on their reading plan. :)
+        </p>
+        <p>
+          If you'd like to see what the robot was/will be reading
+          on a certain date, you can add a date
+          <span class="example"></br>?date=yyyy-mm-dd</span> to the end of the
+          website addrees
+        </p>
+      </div>
+    </div>
+    <script>
+      const start_date = new Date(2000, 0, 1);
+      // Define the number of days in each month
+      const days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+      //Define the books of the Bible
+      const old_testament = [
+        {"name": "Genesis", "chapters": 50},
+        {"name": "Exodus", "chapters": 40},
+        {"name": "Leviticus", "chapters": 27},
+        {"name": "Numbers", "chapters": 36},
+        {"name": "Deuteronomy", "chapters": 34},
+        {"name": "Joshua", "chapters": 24},
+        {"name": "Judges", "chapters": 21},
+        {"name": "Ruth", "chapters": 4},
+        {"name": "1 Samuel", "chapters": 31},
+        {"name": "2 Samuel", "chapters": 24},
+        {"name": "1 Kings", "chapters": 22},
+        {"name": "2 Kings", "chapters": 25},
+        {"name": "1 Chronicles", "chapters": 29},
+        {"name": "2 Chronicles", "chapters": 36},
+        {"name": "Ezra", "chapters": 10},
+        {"name": "Nehemiah", "chapters": 13},
+        {"name": "Esther", "chapters": 10},
+        {"name": "Job", "chapters": 42},
+        {"name": "Ecclesiastes", "chapters": 12},
+        {"name": "Song of Solomon", "chapters": 8},
+        {"name": "Isaiah", "chapters": 66},
+        {"name": "Jeremiah", "chapters": 52},
+        {"name": "Lamentations", "chapters": 5},
+        {"name": "Ezekiel", "chapters": 48},
+        {"name": "Daniel", "chapters": 12},
+        {"name": "Hosea", "chapters": 14},
+        {"name": "Joel", "chapters": 3},
+        {"name": "Amos", "chapters": 9},
+        {"name": "Obadiah", "chapters": 1},
+        {"name": "Jonah", "chapters": 4},
+        {"name": "Micah", "chapters": 7},
+        {"name": "Nahum", "chapters": 3},
+        {"name": "Habakkuk", "chapters": 3},
+        {"name": "Zephaniah", "chapters": 3},
+        {"name": "Haggai", "chapters": 2},
+        {"name": "Zechariah", "chapters": 14},
+        {"name": "Malachi", "chapters": 4}
+    ];
+
+    const psalms_and_proverbs = [
+        {"name": "Psalms", "chapters": 150},
+        {"name": "Proverbs", "chapters": 31},
+    ];
+
+    const new_testament = [
+        {"name": "Matthew", "chapters": 28},
+        {"name": "Mark", "chapters": 16},
+        {"name": "Luke", "chapters": 24},
+        {"name": "John", "chapters": 21},
+        {"name": "Acts", "chapters": 28},
+        {"name": "Romans", "chapters": 16},
+        {"name": "1 Corinthians", "chapters": 16},
+        {"name": "2 Corinthians", "chapters": 13},
+        {"name": "Galatians", "chapters": 6},
+        {"name": "Ephesians", "chapters": 6},
+        {"name": "Philippians", "chapters": 4},
+        {"name": "Colossians", "chapters": 4},
+        {"name": "1 Thessalonians", "chapters": 5},
+        {"name": "2 Thessalonians", "chapters": 3},
+        {"name": "1 Timothy", "chapters": 6},
+        {"name": "2 Timothy", "chapters": 4},
+        {"name": "Titus", "chapters": 3},
+        {"name": "Philemon", "chapters": 1},
+        {"name": "Hebrews", "chapters": 13},
+        {"name": "James", "chapters": 5},
+        {"name": "1 Peter", "chapters": 5},
+        {"name": "2 Peter", "chapters": 3},
+        {"name": "1 John", "chapters": 5},
+        {"name": "2 John", "chapters": 1},
+        {"name": "3 John", "chapters": 1},
+        {"name": "Jude", "chapters": 1},
+        {"name": "Revelation", "chapters": 22}
+    ];
+
+    const generate_reading = (date) => {
+      const oneDay = 24 * 60 * 60 * 1000;
+      let daysSince = Math.ceil(Math.abs(date - start_date) / oneDay);
+      let ps119Offset = daysSince > 118 ? 1 : 0;
+      ps119Offset += Math.floor(Math.abs((daysSince - 118)) / 181);
+
+      const otSum = old_testament
+        .map(b => b["chapters"])
+        .reduce((a, c) => a + c, 0);
+      const ntSum = new_testament
+        .map(b => b["chapters"])
+        .reduce((a, c) => a + c, 0);
+
+      const psprCycleSpot = daysSince % (150 + 31);
+      daysSince -= ps119Offset;
+      const otCycleSpot = (daysSince % otSum);
+      const ntCycleSpot = (daysSince % ntSum);
+
+      let isPsalm119 = false;
+      let runningTotal = 0;
+      const result = [];
+      for (const book of psalms_and_proverbs) {
+        const prevRunningTotal = runningTotal;
+		    runningTotal += book["chapters"]
+        if (runningTotal > psprCycleSpot) {
+          const currentChapter = psprCycleSpot - prevRunningTotal + 1;
+          const bookName = book["name"];
+          result.push({
+            "book": bookName,
+            "chapter": currentChapter
+          });
+          if (bookName == "Psalms" && currentChapter == 119) {
+            isPsalm119 = true;
+          }
+          break;
+        }
+      }
+
+      if (isPsalm119) {
+        return result;
+      }
+
+      runningTotal = 0;
+      for (const book of old_testament) {
+        const prevRunningTotal = runningTotal;
+		    runningTotal += book["chapters"];
+        if (runningTotal > otCycleSpot) {
+          const currentChapter = otCycleSpot - prevRunningTotal + 1;
+          const bookName = book["name"];
+          result.push({
+            "book": bookName,
+            "chapter": currentChapter
+          });
+			    break;
+        }
+      }
+
+      runningTotal = 0;
+      for (const book of new_testament) {
+        const prevRunningTotal = runningTotal;
+		    runningTotal += book["chapters"];
+        if (runningTotal > ntCycleSpot) {
+          const currentChapter = ntCycleSpot - prevRunningTotal + 1;
+          const bookName = book["name"];
+          result.push({
+            "book": bookName,
+            "chapter": currentChapter
+          });
+			    break;
+        }
+      }
+      return result;
+    };
+
+    const showSad = (what) => {
+      document.getElementById("content").innerHTML
+          = [
+            "<p class='story sad'>You made the robot sad",
+            " by asking about <span class='what'></span>. ",
+            ":( Fuck you! >:<</p>"
+          ].join("");
+      const insertPoint = document.querySelector(".story.sad .what");
+      insertPoint.appendChild(
+        document.createTextNode(what)
+      );
+    };
+
+    (function () {
+      try {
+        const today = new Date();
+        const queryStr = location.search;
+        let queryDate = new URLSearchParams(location.search)
+          .get("date")
+        const date = !!queryDate ?
+          new Date(queryDate.replace("-","/")) :
+          today;
+        if (isNaN(date.getSeconds()) || date < start_date) {
+          showSad(queryDate);
+          return;
+        }
+
+        if (date < today) {
+          const today = document.getElementsByClassName("today")[0];
+          today.innerHTML = "On <span></span>, the robot was reading";
+        }
+        else if (date > today) {
+          const today = document.getElementsByClassName("today")[0];
+          today.innerHTML = "On <span></span>, the robot will be reading";
+        }
+
+        const dateEl = document.querySelector(".today span");
+        dateEl.innerHTML = date.toDateString();
+
+        const readingsEl = document.getElementById("readings");
+        const readings = generate_reading(date);
+        if (readings.some(r =>
+          r["book"] === "Psalms"
+          && r["chapter"] == 119
+        )) {
+          document.getElementsByClassName("story")[0].innerHTML
+            = [
+              "and they're only reading Psalm 119",
+              " because it's a long-ass chapter."
+            ].join("");
+        }
+
+        for (const reading of readings) {
+          const el = document.createElement("li");
+          el.innerHTML = `${reading["book"]} ${reading["chapter"]}`;
+          readingsEl.appendChild(el);
+        }
+
+      }
+      catch (e) {
+        showSad(queryDate);
+      }
+    })();
+    </script>
+  </body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "editor.tabSize": 2,
+  "editor.rulers": [80, 120],
+  "workbench.colorCustomizations": {
+    "editorRuler.foreground": "#ef40ff"
+  },
+  "terminal.integrated.env.osx": {
+    "PTHONPATH": "${workspaceFolder}/src: ${workspaceFolder}/src/api",
+    "WSPN_LIB": "washpenny",
+    "WSPN_APP": "washpenny",
+    "WSPN_TEST_ROOT": "${workspaceFolder}/test_trash"
+  },
+  "search.exclude": {
+    "**/test_trash": true
+  },
+  "editor.insertSpaces": false,
+}

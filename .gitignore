@@ -1,0 +1,15 @@
+#.vscode/
+node_modules
+env/
+
+*.pyc
+.DS_STORE
+
+.env.local
+
+test_trash/*
+
+diag_out_*
+api.out
+washpenny.log
+washpenny-debug.log
