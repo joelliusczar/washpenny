@@ -502,7 +502,7 @@ __deployment_env_check_required__() {
 	track_exit_code
 
 	#for encrypting app token
-	[ -z $(__get_WSPN_auth_key__) ] &&
+	[ -z $(__get_wspn_auth_key__) ] &&
 	echo 'deployment var WSPN_AUTH_SECRET_KEY not set in keys'
 	track_exit_code
 
