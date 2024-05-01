@@ -862,9 +862,9 @@ sync_requirement_list() (
 )
 
 
-run_initial_install_script() (
+run_initial_install() (
 	process_global_vars "$@" &&
-	sh $(get_repo_path)/install_setup.sh
+	sh $(get_repo_path)/install.sh
 )
 
 

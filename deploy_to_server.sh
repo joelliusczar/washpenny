@@ -92,8 +92,8 @@ error_check_path "$(get_repo_path)" &&
 rm -rf "$(get_repo_path)" &&
 #since the clone will create the sub dir, we'll just start in the parent
 cd "$(__get_app_root__)"/"$WSPN_BUILD_DIR" &&
-git clone "$WSPN_REPO_URL" "$WSPN_PROJ_NAME" &&
-cd "$WSPN_PROJ_NAME"  &&
+git clone "$WSPN_REPO_URL" "$WSPN_PROJ_NAME_SNAKE" &&
+cd "$WSPN_PROJ_NAME_SNAKE"  &&
 if [ "$currentBranch" != main ]; then
 	echo "Using branch ${currentBranch}"
 	git checkout -t origin/"$currentBranch" || exit 1
@@ -123,7 +123,7 @@ if is_ssh; then
 	elif [ "$__SETUP_LVL__" = 'install' ]; then
 		echo "$__SETUP_LVL__"
 		. ./wspn_dev_ops.sh &&
-		run_initial_install_script
+		run_initial_install
 		echo "finished setup"
 	else
 		echo "$__SETUP_LVL__"
