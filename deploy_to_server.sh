@@ -114,7 +114,7 @@ if is_ssh; then
 		echo "$__SETUP_LVL__"
 		(exit "$unitTestSuccess") &&
 		. ./wspn_dev_ops.sh &&
-		stetup_api
+		setup_api
 	elif [ "$__SETUP_LVL__" = 'client' ]; then
 		echo "$__SETUP_LVL__"
 		. ./wspn_dev_ops.sh &&

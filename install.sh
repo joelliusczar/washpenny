@@ -134,29 +134,6 @@ if ! nvm run node --version 2>/dev/null; then
 fi
 
 
-echo '##### mariadb #####'
-if ! mariadb -V 2>/dev/null; then
-	if [ -n "$__DB_SETUP_PASS__" ]; then
-		case $(uname) in
-			(Linux*)
-				if [ "$pkgMgrChoice" = "$WSPN_APT_CONST" ]; then
-					install_package mariadb-server
-				fi
-				;;
-			(Darwin*)
-				install_package mariadb
-				;;
-			(*) ;;
-		esac &&
-		sudo -p 'Updating db root password' mysql -u root -e \
-			"REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'mysql'@'localhost'" &&
-		sudo -p 'Updating db root password' mysql -u root -e \
-			"SET PASSWORD FOR root@localhost = PASSWORD('${__DB_SETUP_PASS__}');"
-	else
-		show_err_and_exit 'Need a password for root db account to install database'
-	fi
-fi
-
 echo '##### sqlite3 #####'
 if ! sqlite3 -version 2>/dev/null; then
 	install_package sqlite3
