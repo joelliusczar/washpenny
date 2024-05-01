@@ -1838,11 +1838,11 @@ setup_base_dirs() {
 
 	setup_app_directories
 
-	[ -e "$(get_web_root)"/"$WSPN_API_DEST" ] ||
+	[ -e "$(get_web_root)"/"$WSPN_CLIENT_DEST" ] ||
 	{
 		sudo -p 'Pass required to create web server directory: ' \
-			mkdir -pv "$(get_web_root)"/"$WSPN_API_DEST" ||
-		show_err_and_exit "Could not create $(get_web_root)/${WSPN_API_DEST}"
+			mkdir -pv "$(get_web_root)"/"$WSPN_CLIENT_DEST" ||
+		show_err_and_exit "Could not create $(get_web_root)/${WSPN_CLIENT_DEST}"
 	}
 }
 
