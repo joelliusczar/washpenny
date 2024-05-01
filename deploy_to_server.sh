@@ -17,7 +17,7 @@ fi
 process_global_vars "$@" ||
 show_err_and_exit "local error with global variables"
 
-deployment_local_env_check ||
+deployment_env_check ||
 show_err_and_exit "local error with missing keys"
 
 if [ -n "$(git status --porcelain)" ]; then

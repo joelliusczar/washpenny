@@ -181,7 +181,6 @@ empty_dir_contents() (
 	else
 		sudo_mkdir "$dirEmptira" || return "$?"
 	fi &&
-	unroot_dir "$dirEmptira" &&
 	echo "done emptying '${dirEmptira}'"
 )
 
@@ -468,7 +467,7 @@ brew_is_installed() (
 )
 
 
-deployment_env_check_recommended() {
+__deployment_env_check_recommended__() {
 	#possibly problems if missing
 
 	[ -z "$WSPN_LOCAL_REPO_DIR" ] &&
@@ -476,7 +475,7 @@ deployment_env_check_recommended() {
 }
 
 
-deployment_env_check_required() {
+__deployment_env_check_required__() {
 	#definitely problems if missing
 	[ -z "$WSPN_REPO_URL" ] &&
 	echo 'environmental var WSPN_REPO_URL not set'
@@ -512,19 +511,19 @@ deployment_env_check_required() {
 
 deployment_env_check() (
 	echo 'checking environment vars before deployment'
-	deployment_env_check_recommended
-	deployment_env_check_required
+	__deployment_env_check_recommended__
+	__deployment_env_check_required__
 )
 
 
-server_env_check_recommended() {
+__server_env_check_recommended__() {
 	#possibly problems if missing
 	[ -z "$WSPN_LOCAL_REPO_DIR" ] &&
 	echo 'environmental var WSPN_LOCAL_REPO_DIR not set'
 }
 
 
-server_env_check_required() {
+__server_env_check_required__() {
 	#definitely problems if missing
 	[ -z "$WSPN_REPO_URL" ] &&
 	echo 'environmental var WSPN_REPO_URL not set'
@@ -553,19 +552,19 @@ server_env_check_required() {
 
 server_env_check() (
 	echo 'checking environment vars on server'
-	server_env_check_recommended
-	server_env_check_required
+	__server_env_check_recommended__
+	__server_env_check_required__
 )
 
 
-dev_env_check_recommended() {
+__dev_env_check_recommended__() {
 	#possibly problems if missing
 	[ -z "$BOT_REPO_URL" ] &&
 	echo 'environmental var BOT_REPO_URL not set'
 }
 
 
-dev_env_check_required() {
+__dev_env_check_required__() {
 	#definitely problems if missing
 	[ -z "$WSPN_LOCAL_REPO_DIR" ] &&
 	echo 'environmental var WSPN_LOCAL_REPO_DIR not set'
@@ -592,8 +591,8 @@ dev_env_check_required() {
 
 dev_env_check() (
 	echo 'checking environment vars on local dev environment'
-	dev_env_check_recommended
-	dev_env_check_required
+	__dev_env_check_recommended__
+	__dev_env_check_required__
 )
 
 
@@ -909,7 +908,7 @@ extract_commonName_from_cert() (
 scan_pems_for_common_name() (
 	commonName="$1"
 	activate_wspn_env &&
-	python -m 'washpenny_dev_ops.installed_certs' \"$commonName" \
+	python -m 'washpenny_dev_ops.installed_certs' "$commonName" \
 		< /etc/ssl/certs/ca-certificates.crt
 )
 
@@ -1168,7 +1167,7 @@ print_ssl_cert_info() (
 							cert=''
 						fi
 					done
-					;;
+				;;
 		(*)
 			publicKeyFile=$(__get_remote_public_key__) &&
 			cat "$publicKeyFile" | openssl x509 -enddate -subject -noout
@@ -1195,9 +1194,11 @@ setup_ssl_cert_nginx() (
 	domain=$(__get_domain_name__ "$WSPN_ENV" 'omitPort') &&
 	case "$WSPN_ENV" in
 		(local*)
+			echo "setting up local ssl certs"
 			add_test_url_to_hosts "$domain"
 			publicKeyFile=$(__get_local_nginx_cert_path__).public.key.crt &&
 			privateKeyFile=$(__get_local_nginx_cert_path__).private.key.pem &&
+
 			# we're leaving off the && because what would that even mean here?
 			__clean_up_invalid_cert__ "$domain"
 			if [ -z $(__certs_matching_name_exact__ "$domain") ]; then
@@ -1228,6 +1229,7 @@ setup_ssl_cert_nginx() (
 			fi
 			;;
 	esac
+	echo "Done setting up certificates for ${domain}"
 )
 
 
@@ -1264,7 +1266,46 @@ get_nginx_conf_dir_include() (
 )
 
 
-__copy_and_update_nginx_template__() {
+__set_local_nginx_app_conf__() {
+	publicKey=$(__get_local_nginx_cert_path__).public.key.crt &&
+	privateKey=$(__get_local_nginx_cert_path__).private.key.pem &&
+	sudo -p "update ${appConfFile}" \
+		perl -pi -e "s/<listen>/8080 ssl/" "$appConfFile" &&
+	sudo -p "update ${appConfFile}" \
+		perl -pi -e "s@<ssl_public_key>@${publicKey}@" \
+		"$appConfFile" &&
+	sudo -p "update ${appConfFile}" \
+		perl -pi -e "s@<ssl_private_key>@${privateKey}@" \
+		"$appConfFile"
+}
+
+
+__set_deployed_nginx_app_conf__() {
+	sudo -p "update ${appConfFile}" \
+		perl -pi -e "s/<listen>/[::]:443 ssl/" "$appConfFile" &&
+
+		sudo -p "update ${appConfFile}" \
+		perl -pi -e \
+		"s@<ssl_public_key>@$(__get_remote_public_key__)@" \
+		"$appConfFile" &&
+	sudo -p "update ${appConfFile}" \
+		perl -pi -e \
+		"s@<ssl_private_key>@$(__get_remote_private_key__)@" \
+		"$appConfFile" &&
+	sudo -p "update ${appConfFile}" \
+		perl -pi -e \
+		"s@<ssl_intermediate>@$(__get_remote_intermediate_key__)@" \
+		"$appConfFile" &&
+	sudo -p "update ${appConfFile}" \
+		perl -pi -e \
+		's/#ssl_trusted_certificate/ssl_trusted_certificate/' \
+		"$appConfFile"
+}
+
+update_nginx_conf() (
+	echo 'updating nginx site conf'
+	appConfFile="$1"
+	error_check_all_paths "$WSPN_TEMPLATES_SRC" "$appConfFile" &&
 	sudo -p 'copy nginx config' \
 		cp "$WSPN_TEMPLATES_SRC"/nginx_template.conf "$appConfFile" &&
 	sudo -p "update ${appConfFile}" \
@@ -1274,48 +1315,13 @@ __copy_and_update_nginx_template__() {
 	sudo -p "update ${appConfFile}" \
 		perl -pi -e "s@<WSPN_SERVER_NAME>@${WSPN_SERVER_NAME}@g" "$appConfFile" &&
 	sudo -p "update ${appConfFile}" \
-		perl -pi -e "s@<WSPN_API_PORT>@${WSPN_API_PORT}@" "$appConfFile"
-}
-
-
-update_nginx_conf() (
-	echo 'updating nginx site conf'
-	appConfFile="$1"
-	error_check_all_paths "$WSPN_TEMPLATES_SRC" "$appConfFile" &&
-	__copy_and_update_nginx_template__ &&
+		perl -pi -e "s@<WSPN_API_PORT>@${WSPN_API_PORT}@" "$appConfFile" &&
 	case "$WSPN_ENV" in
 		(local*)
-			publicKey=$(__get_local_nginx_cert_path__).public.key.crt &&
-			privateKey=$(__get_local_nginx_cert_path__).private.key.pem &&
-			sudo -p "update ${appConfFile}" \
-				perl -pi -e "s/<listen>/8080 ssl/" "$appConfFile" &&
-			sudo -p "update ${appConfFile}" \
-				perl -pi -e "s@<ssl_public_key>@${publicKey}@" \
-				"$appConfFile" &&
-			sudo -p "update ${appConfFile}" \
-				perl -pi -e "s@<ssl_private_key>@${privateKey}@" \
-				"$appConfFile"
+			__set_local_nginx_app_conf__
 			;;
 		(*)
-			sudo -p "update ${appConfFile}" \
-				perl -pi -e "s/<listen>/[::]:443 ssl/" "$appConfFile" &&
-
-				sudo -p "update ${appConfFile}" \
-				perl -pi -e \
-				"s@<ssl_public_key>@$(__get_remote_public_key__)@" \
-				"$appConfFile" &&
-			sudo -p "update ${appConfFile}" \
-				perl -pi -e \
-				"s@<ssl_private_key>@$(__get_remote_private_key__)@" \
-				"$appConfFile" &&
-			sudo -p "update ${appConfFile}" \
-				perl -pi -e \
-				"s@<ssl_intermediate>@$(__get_remote_intermediate_key__)@" \
-				"$appConfFile" &&
-			sudo -p "update ${appConfFile}" \
-				perl -pi -e \
-				's/#ssl_trusted_certificate/ssl_trusted_certificate/' \
-				"$appConfFile"
+			__set_deployed_nginx_app_conf__
 			;;
 	esac &&
 	echo 'done updating nginx site conf'
@@ -1436,6 +1442,16 @@ setup_nginx_confs() (
 )
 
 
+remove_all_server_confs() (
+	echo 'removing server configs'
+	process_global_vars "$@" &&
+	confDirInclude=$(get_nginx_conf_dir_include) &&
+	confDir=$(get_abs_path_from_nginx_include "$confDirInclude") &&
+	empty_dir_contents "$confDir"
+	echo "done removing configs in ${confDir}"
+)
+
+
 show_current_py_lib_files() (
 	process_global_vars "$@" >/dev/null 2>&1 &&
 	set_python_version_const >/dev/null 2>&1 &&
@@ -1486,6 +1502,7 @@ setup_api() (
 	echo "setting up api"
 	process_global_vars "$@" &&
 	sync_utility_scripts &&
+	setup_client &&
 	setup_nginx_confs &&
 	echo "done setting up api"
 )
@@ -1513,7 +1530,7 @@ setup_client() (
 		"$(get_web_root)"/"$WSPN_CLIENT_DEST" &&
 	#copy built code to new location
 	sudo -p 'Pass required to copy client files: ' \
-		cp -rv "$WSPN_CLIENT_SRC"/build/. \
+		cp -rv "$WSPN_CLIENT_SRC"/. \
 			"$(get_web_root)"/"$WSPN_CLIENT_DEST" &&
 	unroot_dir "$(get_web_root)"/"$WSPN_CLIENT_DEST" &&
 	echo "done setting up client"
@@ -1721,8 +1738,8 @@ define_consts() {
 	# suffixed with DEST
 	export WSPN_TEMPLATES_DEST="$WSPN_TRUNK"/templates
 	export WSPN_SQL_SCRIPTS_DEST="$WSPN_TRUNK"/sql_scripts
-	export WSPN_API_DEST=api/"$WSPN"
-	export WSPN_CLIENT_DEST=client/"$WSPN"
+	export WSPN_API_DEST=api/"$WSPN_APP"
+	export WSPN_CLIENT_DEST=client/"$WSPN_APP"
 
 
 	export WSPN_SERVER_NAME=$(__get_domain_name__ "$WSPN_ENV")
@@ -1752,10 +1769,10 @@ __get_domain_name__() (
 	envArg="$1"
 	omitPort="$2"
 	urlBase=$(__get_url_base__)
-	tld=''
+	tld='xyz'
 	if [ -z "$tld" ]; then
-		#tld has been setup for this app yet
-		echo ""
+		echo "tld has been setup for this app yet" >&2
+		echo "" #return empty
 	fi
 	case "$envArg" in
 		(local*)
