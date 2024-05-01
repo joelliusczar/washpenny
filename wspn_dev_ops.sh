@@ -1616,6 +1616,19 @@ debug_print() (
 )
 
 
+get_rc_candidate() {
+	case $(uname) in
+		(Linux*)
+			echo "$HOME"/.bashrc
+			;;
+		(Darwin*)
+			echo "$HOME"/.zshrc
+			;;
+		(*) ;;
+	esac
+}
+
+
 __get_app_root__() (
 	if [ -n "$__TEST_FLAG__" ]; then
 		echo "$WSPN_TEST_ROOT"
