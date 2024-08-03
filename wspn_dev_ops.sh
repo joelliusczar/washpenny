@@ -22,7 +22,7 @@ track_exit_code() {
 install_package() (
 	pkgName="$1"
 	echo "Try to install --${pkgName}--"
-	case $(uname) in
+	case $(uname) in #()
 		(Linux*)
 			if which pacman >/dev/null 2>&1; then
 				yes | sudo -p 'Pass required for pacman install: ' \
@@ -31,10 +31,10 @@ install_package() (
 				sudo -p 'Pass required for apt-get install: ' \
 					DEBIAN_FRONTEND=noninteractive apt-get -y install "$pkgName"
 			fi
-			;;
+			;; #()
 		(Darwin*)
 			yes | brew install "$pkgName"
-			;;
+			;; #()
 		(*)
 			;;
 	esac
@@ -67,8 +67,8 @@ disable_wordsplitting() {
 str_contains() (
 	haystackStr="$1"
 	needleStr="$2"
-	case "$haystackStr" in
-		*"$needleStr"*)
+	case "$haystackStr" in #()
+		(*"$needleStr"*)
 			return 0
 	esac
 	return 1
@@ -82,11 +82,11 @@ array_contains() (
 	searchValue="$1"
 	shift
 	while [ ! -z "$1" ]; do
-		case $1 in
-			"$searchValue")
+		case $1 in #()
+			("$searchValue")
 				return 0
-				;;
-			*)
+				;; #()
+			(*)
 			;;
 		esac
 		shift
@@ -187,12 +187,12 @@ empty_dir_contents() (
 
 get_bin_path() (
 	pkg="$1"
-	case $(uname) in
+	case $(uname) in #()
 		(Darwin*)
 			brew info "$pkg" \
 			| grep -A1 'has been installed as' \
 			| awk 'END{ print $1 }'
-			;;
+			;; #()
 		(*) which "$pkg" ;;
 	esac
 )
@@ -342,13 +342,13 @@ set_env_vars() {
 
 
 get_localhost_key_dir() (
-	case $(uname) in
+	case $(uname) in #()
 		(Darwin*)
 			echo "$HOME"/.ssh
-			;;
+			;; #()
 		(Linux*)
 			echo "$HOME"/.ssh
-			;;
+			;; #()
 		(*) ;;
 	esac
 )
@@ -433,7 +433,7 @@ __is_current_dir_repo__() {
 
 get_pkg_mgr() {
 	define_consts >&2
-	case $(uname) in
+	case $(uname) in #()
 		(Linux*)
 			if  which pacman >/dev/null 2>&1; then
 				echo "$WSPN_PACMAN"
@@ -442,11 +442,11 @@ get_pkg_mgr() {
 				echo "$WSPN_APT_CONST"
 				return 0
 			fi
-			;;
+			;; #()
 		(Darwin*)
 			echo "$WSPN_HOMEBREW"
 			return 0
-			;;
+			;; #()
 		(*)
 			;;
 	esac
@@ -457,11 +457,11 @@ get_pkg_mgr() {
 brew_is_installed() (
 	pkg="$1"
 	echo "checking about $pkg"
-	case $(uname) in
+	case $(uname) in #()
 		(Darwin*)
 			brew info "$pkg" >/dev/null 2>&1 &&
 			! brew info "$pkg" | grep 'Not installed' >/dev/null
-			;;
+			;; #()
 		(*) return 0 ;;
 	esac
 )
@@ -801,11 +801,11 @@ link_app_python_if_not_linked() {
 		if [ ! -e "$(__get_app_root__)"/"$WSPN_BIN_DIR" ]; then
 			sudo_mkdir "$(__get_app_root__)"/"$WSPN_BIN_DIR" || return "$?"
 		fi
-		case $(uname) in
+		case $(uname) in #()
 			(Darwin*)
 				ln -sf $(get_bin_path python@3.9) \
 					"$(__get_app_root__)"/"$WSPN_BIN_DIR"/wspn-python
-				;;
+				;; #()
 			(*)
 				ln -sf $(get_bin_path python3) \
 					"$(__get_app_root__)"/"$WSPN_BIN_DIR"/wspn-python
@@ -915,11 +915,11 @@ scan_pems_for_common_name() (
 
 certs_matching_name() (
 	commonName="$1"
-		case $(uname) in
+		case $(uname) in #()
 		(Darwin*)
 			security find-certificate -a -p -c "$commonName" \
 				$(__get_keychain_osx__)
-			;;
+			;; #()
 		(*)
 			scan_pems_for_common_name "$commonName"
 			;;
@@ -936,13 +936,13 @@ __certs_matching_name_exact__() (
 
 
 __get_openssl_default_conf__() (
-	case $(uname) in
+	case $(uname) in #()
 		(Darwin*)
 			echo '/System/Library/OpenSSL/openssl.cnf'
-			;;
+			;; #()
 		(Linux*)
 			echo '/etc/ssl/openssl.cnf'
-			;;
+			;; #()
 		(*) ;;
 	esac
 )
@@ -1051,7 +1051,7 @@ __install_local_cert_debian__() (
 
 __clean_up_invalid_cert__() (
 	commonName="$1" &&
-	case $(uname) in
+	case $(uname) in #()
 		(Darwin*)
 			cert=''
 			#turns out the d flag is not posix compliant :<
@@ -1066,7 +1066,7 @@ __clean_up_invalid_cert__() (
 						cert=''
 					fi
 				done
-			;;
+			;; #()
 		(*)
 				cert=''
 				#turns out the d flag is not posix compliant :<
@@ -1097,13 +1097,13 @@ __setup_ssl_cert_local__() (
 	publicKeyFile="$3" &&
 	privateKeyFile="$4" &&
 
-	case $(uname) in
+	case $(uname) in #()
 		(Darwin*)
 			__openssl_gen_cert__ "$commonName" "$domain" \
 				"$publicKeyFile" "$privateKeyFile" &&
 			__install_local_cert_osx__ "$publicKeyFile" ||
 			return 1
-			;;
+			;; #()
 		(*)
 			if [ -f '/etc/debian_version' ]; then
 				__openssl_gen_cert__ "$commonName" "$domain" \
@@ -1136,7 +1136,7 @@ setup_ssl_cert_local_debug() (
 print_ssl_cert_info() (
 	process_global_vars "$@" &&
 	domain=$(__get_domain_name__ "$WSPN_ENV" 'omitPort') &&
-	case "$WSPN_ENV" in
+	case "$WSPN_ENV" in #()
 		(local*)
 			isDebugServer=${1#is_debug_server=}
 			if [ -n "$isDebugServer" ]; then
@@ -1167,7 +1167,7 @@ print_ssl_cert_info() (
 							cert=''
 						fi
 					done
-				;;
+				;; #()
 		(*)
 			publicKeyFile=$(__get_remote_public_key__) &&
 			cat "$publicKeyFile" | openssl x509 -enddate -subject -noout
@@ -1192,7 +1192,7 @@ add_test_url_to_hosts() (
 setup_ssl_cert_nginx() (
 	process_global_vars "$@" &&
 	domain=$(__get_domain_name__ "$WSPN_ENV" 'omitPort') &&
-	case "$WSPN_ENV" in
+	case "$WSPN_ENV" in #()
 		(local*)
 			echo "setting up local ssl certs"
 			add_test_url_to_hosts "$domain"
@@ -1207,7 +1207,7 @@ setup_ssl_cert_nginx() (
 			fi
 			publicKeyName=$(__get_local_nginx_cert_name__).public.key.crt &&
 			__set_firefox_cert_policy__ "$publicKeyName"
-			;;
+			;; #()
 		(*)
 			publicKeyFile=$(__get_remote_public_key__) &&
 			privateKeyFile=$(__get_remote_private_key__) &&
@@ -1227,7 +1227,7 @@ setup_ssl_cert_nginx() (
 				stdin_json_extract_value 'intermediatecertificate' | \
 				perl -pe 'chomp if eof' > "$intermediateKeyFile"
 			fi
-			;;
+			;; #()
 	esac
 	echo "Done setting up certificates for ${domain}"
 )
@@ -1316,10 +1316,10 @@ update_nginx_conf() (
 		perl -pi -e "s@<WSPN_SERVER_NAME>@${WSPN_SERVER_NAME}@g" "$appConfFile" &&
 	sudo -p "update ${appConfFile}" \
 		perl -pi -e "s@<WSPN_API_PORT>@${WSPN_API_PORT}@" "$appConfFile" &&
-	case "$WSPN_ENV" in
+	case "$WSPN_ENV" in #()
 		(local*)
 			__set_local_nginx_app_conf__
-			;;
+			;; #()
 		(*)
 			__set_deployed_nginx_app_conf__
 			;;
@@ -1381,10 +1381,10 @@ enable_nginx_include() (
 
 restart_nginx() (
 	echo 'starting/restarting up nginx'
-	case $(uname) in
+	case $(uname) in #()
 		(Darwin*)
 			nginx -s reload
-			;;
+			;; #()
 		(Linux*)
 			if systemctl is-active --quiet nginx; then
 				sudo -p 'starting nginx' systemctl restart nginx
@@ -1509,7 +1509,7 @@ setup_api() (
 
 
 create_swap_if_needed() (
-		case $(uname) in
+		case $(uname) in #()
 		(Linux*)
 			if [ ! -e /swapfile ]; then
 				sudo dd if=/dev/zero of=/swapfile bs=128M count=24 &&
@@ -1517,7 +1517,7 @@ create_swap_if_needed() (
 				sudo mkswap /swapfile &&
 				sudo swapon /swapfile
 			fi
-			;;
+			;; #()
 		(*) ;;
 	esac
 )
@@ -1643,15 +1643,15 @@ get_web_root() (
 		echo "$WSPN_TEST_ROOT"
 		return
 	fi
-	case $(uname) in
+	case $(uname) in #()
 		(Linux*)
 			echo "${WSPN_WEB_ROOT_OVERRIDE:-/srv}"
 			return
-			;;
+			;; #()
 		(Darwin*)
 			echo "${WSPN_WEB_ROOT_OVERRIDE:-/Library/WebServer}"
 			return
-			;;
+			;; #()
 		(*) ;;
 	esac
 )
@@ -1675,45 +1675,45 @@ process_global_args() {
 	#in case need to pass the args to a remote script. example
 	__GLOBAL_ARGS__=''
 	while [ ! -z "$1" ]; do
-		case "$1" in
+		case "$1" in #()
 			#build out to test_trash rather than the normal directories
 			#sets WSPN_APP_ROOT and WSPN_WEB_ROOT_OVERRIDE
 			#without having to set them explicitly
 			(test)
 				export __TEST_FLAG__='true'
 				__GLOBAL_ARGS__="${__GLOBAL_ARGS__} test"
-				;;
+				;; #()
 			(replace=*)
 				export __REPLACE__=${1#replace=}
 				__GLOBAL_ARGS__="${__GLOBAL_ARGS__} replace='${__REPLACE__}'"
-				;;
+				;; #()
 			(clean) #tells setup functions to delete files/dirs before installing
 				export __CLEAN_FLAG='clean'
 				__GLOBAL_ARGS__="${__GLOBAL_ARGS__} clean"
-				;;
+				;; #()
 			#activates debug_print. Also tells deploy script to use the diag branch
 			(diag)
 				export __DIAG_FLAG__='true'
 				__GLOBAL_ARGS__="${__GLOBAL_ARGS__} diag"
 				echo '' > diag_out_"$__INCLUDE_COUNT__"
-				;;
+				;; #()
 			(setuplvl=*) #affects which setup scripst to run
 				export __SETUP_LVL__=${1#setuplvl=}
 				__GLOBAL_ARGS__="${__GLOBAL_ARGS__} setuplvl='${__SETUP_LVL__}'"
-				;;
+				;; #()
 			#when I want to conditionally run with some experimental code
 			(experiment=*)
 				export __EXPERIMENT_NAME__=${1#experiment=}
 				__GLOBAL_ARGS__="${__GLOBAL_ARGS__} experiment='${__EXPERIMENT_NAME__}'"
-				;;
+				;; #()
 			(skip=*)
 				export __SKIP__=${1#skip=}
 				__GLOBAL_ARGS__="${__GLOBAL_ARGS__} skip='${__SKIP__}'"
-				;;
+				;; #()
 			(dbsetuppass=*)
 				export __DB_SETUP_PASS__=${1#dbsetuppass=}
 				__GLOBAL_ARGS__="${__GLOBAL_ARGS__} dbsetuppass='${__DB_SETUP_PASS__}'"
-				;;
+				;; #()
 			(*) ;;
 		esac
 		shift
@@ -1787,14 +1787,14 @@ __get_domain_name__() (
 		echo "tld has been setup for this app yet" >&2
 		echo "" #return empty
 	fi
-	case "$envArg" in
+	case "$envArg" in #()
 		(local*)
 			if [ -n "$omitPort" ]; then
 				urlSuffix="-local.${tld}"
 			else
 				urlSuffix="-local.${tld}:8080"
 			fi
-			;;
+			;; #()
 		(*)
 			urlSuffix=".${tld}"
 			;;
@@ -1889,15 +1889,15 @@ unset_globals() {
 					echo "leaving $constant"
 					continue
 				fi
-				case "$constant" in
+				case "$constant" in #()
 					(WSPN_*)
 						echo "unsetting ${constant}"
 						unset "$constant"
-						;;
+						;; #()
 					(__*)
 						echo "unsetting ${constant}"
 						unset "$constant"
-						;;
+						;; #()
 					(*)
 						;;
 					esac
