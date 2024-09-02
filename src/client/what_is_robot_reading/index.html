@@ -28,8 +28,20 @@
         <p>
           The robot is not a huge fan of reading plans.
           They just ended up rereading
-          Genesis and Matthew over and over again for each time they restarted.
+          Genesis and Matthew over and over again for each time they restarted,
+          and they felt like they never got to experience books like
+          Isaiah or Amos.
         </p>
+        <p>
+          By following along with the robot, there's no pressue. Do you keep falling
+          into the Red Sea trying to make that exodus through Exodus?
+          The burden of the Lord is light, but it's
+          not the Lord's burden when you're constantly playing catch up. You won't
+          have to lament that your reading plan is Lamentations, but you're
+          still in fucking Deuteronomy when reading with the robot.
+          Missed some days? Just jump right back in.
+        </p>
+        <p></p>
         <p>
           The robot is always happy for any to join in on their reading plan. :)
         </p>
@@ -37,8 +49,9 @@
           If you'd like to see what the robot was/will be reading
           on a certain date, you can add a date
           <span class="example"></br>?date=yyyy-mm-dd</span> to the end of the
-          website addrees
+          website address. Or use the below date control.
         </p>
+        <input type="date" id="date-set"/>
       </div>
     </div>
     <script>
@@ -225,11 +238,13 @@
 
         if (date < today) {
           const today = document.getElementsByClassName("today")[0];
-          today.innerHTML = "On <span></span>, the robot was reading";
+          today.innerHTML = "On <span class='date-slot'></span>, " +
+            "the robot was reading";
         }
         else if (date > today) {
           const today = document.getElementsByClassName("today")[0];
-          today.innerHTML = "On <span></span>, the robot will be reading";
+          today.innerHTML = "On <span class='date-slot'></span>, " +
+            "the robot will be reading";
         }
 
         const dateEl = document.querySelector(".today span");
@@ -253,6 +268,13 @@
           el.innerHTML = `${reading["book"]} ${reading["chapter"]}`;
           readingsEl.appendChild(el);
         }
+
+        const dateInput = document.getElementById("date-set");
+        dateInput.addEventListener("change", (e) => {
+          const queryStrObj = new URLSearchParams(location.search);
+          queryStrObj.set("date", e.target.value);
+          location.search = queryStrObj.toString();
+        });
 
       }
       catch (e) {
