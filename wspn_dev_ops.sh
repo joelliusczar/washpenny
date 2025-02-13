@@ -1292,10 +1292,10 @@ __set_deployed_nginx_app_conf__() {
 		perl -pi -e \
 		"s@<ssl_private_key>@$(__get_remote_private_key__)@" \
 		"$appConfFile" &&
-	sudo -p "update ${appConfFile}" \
-		perl -pi -e \
-		"s@<ssl_intermediate>@$(__get_remote_intermediate_key__)@" \
-		"$appConfFile" &&
+	# sudo -p "update ${appConfFile}" \
+	# 	perl -pi -e \
+	# 	"s@<ssl_intermediate>@$(__get_remote_intermediate_key__)@" \
+	# 	"$appConfFile" &&
 	sudo -p "update ${appConfFile}" \
 		perl -pi -e \
 		's/#ssl_trusted_certificate/ssl_trusted_certificate/' \
