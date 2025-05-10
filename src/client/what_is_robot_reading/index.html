@@ -273,7 +273,7 @@
         }
 
         const dateInput = document.getElementById("date-set");
-        dateInput.addEventListener("change", (e) => {
+        dateInput.addEventListener("blur", (e) => {
           const queryStrObj = new URLSearchParams(location.search);
           queryStrObj.set("date", e.target.value);
           location.search = queryStrObj.toString();
