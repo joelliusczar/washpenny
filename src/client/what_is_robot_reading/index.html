@@ -14,7 +14,10 @@
   </head>
   <body>
     <div id="content">
-      <p class="today">Today on <span></span>, the robot is reading</p>
+      <p class="today">
+        Today on <span></span>, 
+        the robot is <span class="ps119Content">reading</span>
+      </p>
       <ul id="readings"></ul>
       <div class="story">
         <p>
@@ -256,9 +259,9 @@
           r["book"] === "Psalms"
           && r["chapter"] == 119
         )) {
-          document.getElementsByClassName("story")[0].innerHTML
+          document.getElementsByClassName("ps119Content")[0].innerHTML
             = [
-              "and they're only reading Psalm 119",
+              "only reading Psalm 119",
               " because it's a long-ass chapter."
             ].join("");
         }
