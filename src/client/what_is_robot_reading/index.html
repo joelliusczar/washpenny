@@ -242,12 +242,12 @@
         if (date < today) {
           const today = document.getElementsByClassName("today")[0];
           today.innerHTML = "On <span class='date-slot'></span>, " +
-            "the robot was reading";
+            "the robot was <span class='ps119Content'>reading</span>";
         }
         else if (date > today) {
           const today = document.getElementsByClassName("today")[0];
           today.innerHTML = "On <span class='date-slot'></span>, " +
-            "the robot will be reading";
+            "the robot will be <span class='ps119Content'>reading</span>";
         }
 
         const dateEl = document.querySelector(".today span");
