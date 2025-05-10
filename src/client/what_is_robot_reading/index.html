@@ -232,7 +232,7 @@
         let queryDate = new URLSearchParams(location.search)
           .get("date")
         const date = !!queryDate ?
-          new Date(queryDate.replace("-","/")) :
+          new Date(queryDate.replaceAll("-","/")) :
           today;
         if (isNaN(date.getSeconds()) || date < start_date) {
           showSad(queryDate);
