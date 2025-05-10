@@ -71,7 +71,7 @@ module Provincial
 		repo_url: ENV["WSPN_REPO_URL"],
 		env_prefix: "WSPN",
 		url_base: "washpenny",
-		tld: "xyz",
+		tld: "com",
 		db_owner_name: "blank"
 	)
 

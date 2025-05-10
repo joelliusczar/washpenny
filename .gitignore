@@ -13,3 +13,8 @@ diag_out_*
 api.out
 washpenny.log
 washpenny-debug.log
+
+
+dev_ops/bundle.rb
+dev_ops/provincial.rb
+dev_ops/wspn_dev_dev
