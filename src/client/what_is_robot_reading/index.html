@@ -58,9 +58,7 @@
       </div>
     </div>
     <script>
-      const start_date = new Date(2000, 0, 1);
-      // Define the number of days in each month
-      const days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+      const start_date = new Date(1970, 0, 1);
 
       //Define the books of the Bible
       const old_testament = [
@@ -146,10 +144,10 @@
 
       const otSum = old_testament
         .map(b => b["chapters"])
-        .reduce((a, c) => a + c, 0);
+        .reduce((a, c) => a + c, 0); //748
       const ntSum = new_testament
         .map(b => b["chapters"])
-        .reduce((a, c) => a + c, 0);
+        .reduce((a, c) => a + c, 0); //260
 
       const psprCycleSpot = daysSince % (150 + 31);
       daysSince -= ps119Offset;

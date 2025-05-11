@@ -86,14 +86,16 @@ module Provincial
 	)
 	@remote_spoon = SaladPrep::RemoteSpoon.new(
 		@egg,
-		@cert_retriever,
-		@spoon_handle
+		@spoon_handle,
+		@cert_retriever
 	)
+
+	@where_spoon = @egg.is_local? ? @local_spoon : @remote_spoon
 
 	@spoon_phone = SaladPrep::NginxPhone.new(
 		@egg,
 		SaladPrep::Resorcerer,
-		@egg.is_local? ? @local_spoon : @remote_spoon
+		@where_spoon
 	)
 
 	@w_spoon = SaladPrep::WSpoon.new(@egg, @where_spoon, @spoon_phone)
