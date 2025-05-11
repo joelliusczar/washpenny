@@ -75,19 +75,41 @@ module Provincial
 		db_owner_name: "blank"
 	)
 
-	@w_spoon = SaladPrep::WSpoon.new(@egg, SaladPrep::Resorcerer)
+	@browser_trust_introducer = SaladPrep::FirefoxTrustIntroducer.new
+	@cert_retriever = SaladPrep::PorkbunCertRetriever.new(@egg)
+	@spoon_handle = SaladPrep::WSpoon.spoon_handle(@egg)
+	@where_spoon = nil
+	@local_spoon = SaladPrep::LocalSpoon.new(
+		@egg,
+		@browser_trust_introducer,
+		@spoon_handle
+	)
+	@remote_spoon = SaladPrep::RemoteSpoon.new(
+		@egg,
+		@cert_retriever,
+		@spoon_handle
+	)
+
+	@spoon_phone = SaladPrep::NginxPhone.new(
+		@egg,
+		SaladPrep::Resorcerer,
+		@egg.is_local? ? @local_spoon : @remote_spoon
+	)
+
+	@w_spoon = SaladPrep::WSpoon.new(@egg, @where_spoon, @spoon_phone)
 	@box_box = SaladPrep::BoxBox.new(@egg)
 	@dbass = SaladPrep::NoopAss.new(@egg)
 	@remote = SaladPrep::Remote.new(@egg)
-	@api_launcher = SaladPrep::StaticAPILauncher.new(
-		egg: @egg,
-		dbass: @dbass,
-		w_spoon: @w_spoon
-	)
-
 	@client_launcher = SaladPrep::ClientLauncher.new(
 		@egg
 	)
+	@api_launcher = SaladPrep::StaticAPILauncher.new(
+		egg: @egg,
+		dbass: @dbass,
+		w_spoon: @w_spoon,
+		client_launcher: @client_launcher
+	)
+
 
 	@installer = WSPNInstallion.new(
 		egg: @egg
