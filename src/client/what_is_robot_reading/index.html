@@ -137,9 +137,13 @@
         {"name": "Revelation", "chapters": 22}
     ];
 
-    const generate_reading = (date) => {
+    const date_index = (date) => {
       const oneDay = 24 * 60 * 60 * 1000;
-      let daysSince = Math.ceil(Math.abs(date - start_date) / oneDay);
+      const index = Math.ceil(Math.abs(date - start_date) / oneDay);
+      return index;
+    };
+
+    const generate_reading = (daysSince) => {
       let ps119Offset = daysSince > 118 ? 1 : 0;
       ps119Offset += Math.floor(Math.abs((daysSince - 118)) / 181);
 
@@ -211,7 +215,7 @@
       return result;
     };
 
-    const showSad = (what) => {
+    const show_sad = (what) => {
       document.getElementById("content").innerHTML
           = [
             "<p class='story sad'>You made the robot sad",
@@ -234,7 +238,7 @@
           new Date(queryDate.replaceAll("-","/")) :
           today;
         if (isNaN(date.getSeconds()) || date < start_date) {
-          showSad(queryDate);
+          show_sad(queryDate);
           return;
         }
 
@@ -253,7 +257,8 @@
         dateEl.innerHTML = date.toDateString();
 
         const readingsEl = document.getElementById("readings");
-        const readings = generate_reading(date);
+        const index = date_index(date);
+        const readings = generate_reading(index);
         if (readings.some(r =>
           r["book"] === "Psalms"
           && r["chapter"] == 119
@@ -280,7 +285,7 @@
 
       }
       catch (e) {
-        showSad(queryDate);
+        show_sad(queryDate);
       }
     })();
     </script>
