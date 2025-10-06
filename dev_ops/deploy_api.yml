@@ -1,0 +1,2 @@
+---
+- import_playbook: startup_api.yml

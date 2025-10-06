@@ -1,0 +1,17 @@
+---
+app_details:
+  name: washpenny
+  prefix: WSPN
+  engine: musical_chairs_libs
+  api_version: v1
+src_dirs:
+  engine: ../src/musical_chairs_libs
+  templates: files
+dest_dirs:
+  engine_dir_name: musical_chairs_libs
+tech:
+  api_lang: ''
+  db: ''
+url_segments:
+  base: washpenny
+  tld: com

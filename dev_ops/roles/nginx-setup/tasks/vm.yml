@@ -1,0 +1,81 @@
+---
+- name: Add test url to hosts file.
+  become: true
+  lineinfile:
+    path: /etc/hosts
+    line: '{{inventory_hostname}}{{""|indent(8, True)}}{{common_name}}'
+  delegate_to: localhost #for when deploying to a vm
+- name: Assign cert file paths to vars
+  set_fact:
+    cert_files:
+      public: '/etc/ssl/certs/{{cert_prefix}}.public.key.pem'
+      private: '/etc/ssl/private/{{cert_prefix}}.private.key.pem'
+      csr: /tmp/vm.csr
+- name: https certs are still valid
+  script: > 
+    installed_certs.py check 
+    '{{url_segments["base"]}}.{{url_segments["tld"]}}'
+    '{{cert_files["public"]}}', 
+    '{{cert_files["private"]}}'
+  args:
+    executable: python3
+  environment:
+    DSF_OPENSSL_DEFAULT_CONFIG: '{{dev_files["openssl_default_config"]}}'
+    DSF_SSH_DIR: '{{ssh_dir}}'
+    DSF_APP_NAME: '{{app_details["name"]}}'
+  register: valid_certs
+  changed_when: valid_certs.stdout == ""
+- name: Generate an OpenSSL private key.
+  become: true
+  openssl_privatekey:
+    path: '{{cert_files["private"]}}'
+  when: valid_certs.stdout == ""
+- name: Generate an OpenSSL CSR.
+  become: true
+  openssl_csr:
+    path: '{{cert_files["csr"]}}'
+    privatekey_path: '{{cert_files["private"]}}'
+    common_name: '{{common_name}}'
+  when: valid_certs.stdout == ""
+- name: Fetch private key
+  become: true
+  fetch:
+    src: '{{cert_files["private"]}}'
+    dest: /tmp/private.key.pem
+    flat: true
+- name: Fetch csr
+  fetch:
+    src: '{{cert_files["csr"]}}'
+    dest: /tmp/vm.csr
+    flat: true
+- name: Generate a Self Signed OpenSSL certificate.
+  openssl_certificate:
+    path: /tmp/public.key.pem
+    privatekey_path: /tmp/private.key.pem
+    csr_path: /tmp/vm.csr
+    provider: selfsigned
+    selfsigned_not_after: "+7d"
+  delegate_to: localhost
+  when: valid_certs.stdout == ""
+- name: Copy public key
+  become: true
+  copy:
+    src: /tmp/public.key.pem
+    dest: '{{cert_files["public"]}}'
+  when: valid_certs.stdout == ""
+- name: Replace web config
+  become: true
+  template: 
+    src: nginx_template.j2
+    dest: '/etc/nginx/sites-enabled/{{conf_name}}.conf'
+  vars:
+    listen: 443 ssl
+  notify: Restart nginx
+- name: Ensure Browser can see certificate
+  become: true
+  script: >
+    firefox_cert_installer.py
+    /tmp/public.key.pem
+  args:
+    executable: python3
+  delegate_to: localhost

@@ -47,7 +47,6 @@ module Provincial
 					ssl_certificate_key <ssl_private_key>;
 					#should be the intermediate key if relevant
 					#ssl_trusted_certificate <ssl_intermediate>;
-					client_max_body_size 0;
 
 					location / {
 						root <CLIENT_DEST>;

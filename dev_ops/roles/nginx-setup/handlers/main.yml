@@ -1,0 +1,10 @@
+---
+# handlers file for nginx-setup
+- name: Restart nginx
+  become: true
+  service:
+    name: nginx
+    state: reloaded
+- name: Update certificates
+  become: true
+  command: update-ca-certificates

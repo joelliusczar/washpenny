@@ -1,0 +1,78 @@
+---
+- hosts: all
+
+  vars:
+    app_trunk: '{{dest_dirs["app_root"]|default("~")}}/{{app_details["name"]}}'
+    test_trunk: '../test_trash/{{app_details["name"]}}'
+
+  vars_files:
+    - vars/vault.yml
+    - vars/globals.yml
+
+  pre_tasks:
+    - name: Check that latest is pushed up.
+      include_role:
+        name: repo-check
+    - name: End early?
+      meta: end_play
+      when: hostvars.localhost.skip_to_exit|default(omit) == true
+    - include_vars: "{{ item }}"
+      with_first_found:
+        - 'vars/os_vars_default.yml'
+    - include_vars: 'vars/vault.yml'
+    - name: Set local server settings
+      set_fact:
+        env_list:
+        - name: "model" 
+          port: 8033
+          url: 'https://{{url_segments["base"]}}-model.{{url_segments["tld"]}}:8080'
+          client_dir: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}/client-model/'
+          server_name: '{{url_segments["base"]}}-model.{{url_segments["tld"]}}'
+          common_name: '{{url_segments["base"]}}-model.{{url_segments["tld"]}}'
+        - name: "rebug"
+          port: 8032
+          url: 'https://{{url_segments["base"]}}-rebug.{{url_segments["tld"]}}:8080'
+          client_dir: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}/client-rebug/'
+          server_name: '{{url_segments["base"]}}-rebug.{{url_segments["tld"]}}'
+          common_name: '{{url_segments["base"]}}-rebug.{{url_segments["tld"]}}'
+        - name: "debug"
+          port: 8032
+          url: 'localhost'
+          client_dir: ''
+          server_name: ''
+          common_name: 'localhost'
+      when: inventory_hostname in ["127.0.0.1", "localhost"]
+    - name: Set remote server settings
+      set_fact:
+        env_list:
+          - name: "remote"
+            port: 8033
+            url: 'https://{{url_segments["base"]}}.{{url_segments["tld"]}}'
+            client_dir: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}/client/'
+            server_name: '{{url_segments["base"]}}.{{url_segments["tld"]}}'
+            common_name: ''
+      when: ansible_host not in ["127.0.0.1", "localhost"] and not "192.168.0.0/16"|ansible.utils.network_in_usable(ansible_host)
+
+  tasks:
+    - name: Nginx setup
+      include_role:
+        name: nginx-setup
+      vars:
+        env_name: '{{item["name"]}}'
+        server_name: '{{item["server_name"]}}'
+        api_port: '{{item["port"]}}'
+        common_name: '{{item["common_name"]}}'
+        ssh_dir: '{{dev_dirs["ssh"]|expanduser()}}'
+        serve_dir: '{{item["client_dir"]}}'
+      loop: '{{env_list}}'
+    - name: Create serving directory
+      file:
+        path: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}'
+        state: directory
+    - name: Copy client files
+      become: true
+      synchronize:
+        src: ../src/client/
+        delete: true
+        dest: '{{item["client_dir"]}}'
+      loop: '{{env_list}}'

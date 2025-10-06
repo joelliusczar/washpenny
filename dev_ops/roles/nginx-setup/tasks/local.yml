@@ -1,0 +1,48 @@
+---
+- name: Add test url to hosts file.
+  become: true
+  lineinfile:
+    path: /etc/hosts
+    line: '{{inventory_hostname}}{{""|indent(8, True)}}{{common_name}}'
+  when: env_name != "debug"
+- name: Assign cert file paths to vars
+  set_fact:
+    cert_files:
+      public: '{{ssh_dir}}/{{cert_prefix}}.public.pem'
+      private: '{{ssh_dir}}/{{cert_prefix}}.private.pem'
+      csr: '{{ssh_dir}}/{{cert_prefix}}.csr'
+- name: Generate an OpenSSL private key.
+  openssl_privatekey:
+    path: '{{cert_files["private"]}}'
+  notify: Restart nginx
+- name: Generate an OpenSSL CSR.
+  openssl_csr:
+    path: '{{cert_files["csr"]}}'
+    privatekey_path: '{{cert_files["private"]}}'
+    common_name: '{{common_name}}'
+  notify: Restart nginx
+- name: Generate a Self Signed OpenSSL certificate.
+  openssl_certificate:
+    path: '{{cert_files["public"]}}'
+    privatekey_path: '{{cert_files["private"]}}'
+    csr_path: '{{cert_files["csr"]}}'
+    provider: selfsigned
+    selfsigned_not_after: "+7d"
+  notify: Restart nginx
+- name: Ensure Browser can see certificate
+  become: true
+  script: >
+    firefox_cert_installer.py
+    '{{cert_files["public"]}}'
+  args:
+    executable: python3
+  when: cert_files["public"] != ""
+- name: Replace web config
+  become: true
+  template: 
+    src: nginx_template.j2
+    dest: '/etc/nginx/sites-enabled/{{conf_name}}.conf'
+  vars:
+    listen: 8080 ssl
+  notify: Restart nginx
+  when: env_name != "debug"
