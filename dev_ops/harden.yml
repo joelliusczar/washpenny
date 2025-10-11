@@ -1,0 +1,112 @@
+---
+- hosts: all
+  ignore_unreachable: true
+  gather_facts: false
+
+  vars:
+    app_trunk: '{{dest_dirs["app_root"]|default("~")}}/{{app_details["name"]}}'
+    test_trunk: '../test_trash/{{app_details["name"]}}'
+    ansible_port: 22
+    ansible_user: root
+
+  vars_files:
+    - vars/vault.yml
+    - vars/globals.yml
+
+  handlers:
+    - name: restart ssh
+      service: name=ssh state=restarted
+
+  pre_tasks:
+    - name: Check if we're using the default SSH port
+      wait_for:
+        port: 22
+        state: 'stopped'
+        host: '{{ inventory_hostname }}'
+        connect_timeout: 3
+        timeout: 3
+      delegate_to: 'localhost'
+      ignore_errors: true
+      register: port_check
+    - name: Exit if port 22 is closed
+      meta: end_play
+      when: port_check is defined and
+        port_check.state|default(omit) == "stopped"
+
+
+  tasks:
+    - name: Add group
+      become: true
+      group:
+        name: '{{domain["group"]}}'
+        state: present
+    - name: Add user
+      user:
+        name: '{{domain["user"]}}'
+        group: '{{domain["group"]}}'
+        generate_ssh_key: true
+        ssh_key_type: 'ed25519'
+        shell: /bin/bash
+      register: user_info
+    - name: Define local ssh key paths
+      set_fact:
+        local_ssh_key_paths:
+          private: '~/.ssh/{{app_details["name"]}}_{{domain["user"]}}_{{inventory_hostname}}_ssh.private.key'
+          public: '~/.ssh/{{app_details["name"]}}_{{domain["user"]}}_{{inventory_hostname}}_ssh.public.key'
+    - name: Save the ssh key
+      fetch:
+        src: '{{user_info.ssh_key_file}}'
+        dest: '{{local_ssh_key_paths["private"]}}'
+        flat: true
+    - name: Add authorized
+      lineinfile:
+        path: '/home/{{domain["user"]}}/.ssh/authorized_keys'
+        line: '{{user_info.ssh_public_key}}'
+        create: true
+        group: '{{domain["group"]}}'
+        owner: '{{domain["user"]}}'
+    - name: Save the public key
+      copy:
+        content: '{{user_info.ssh_public_key}}'
+        dest: '{{local_ssh_key_paths["public"]}}'
+      delegate_to: localhost
+    - name: Add sudo rights for deployment user.
+      lineinfile:
+        dest: /etc/sudoers
+        regexp: '^{{domain["user"]}}'
+        line: '{{domain["user"]}} ALL=(ALL) NOPASSWD: ALL'
+        state: present
+        validate: 'visudo -cf %s'
+    - name: Update SSH configuration to be more secure.
+      lineinfile:
+        dest: /etc/ssh/sshd_config
+        regexp: '{{item.regexp}}'
+        line: '{{item.line}}'
+        state: present
+        validate: 'sshd -t -f %s'
+      loop:
+        - regexp: '^PasswordAuthentication'
+          line: 'PasswordAuthentication no'
+        - regexp: '^PermitRootLogin'
+          line: 'PermitRootLogin no'
+        - regexp: '^Port'
+          line: 'Port {{domain["port"]}}'
+      notify: restart ssh
+    - name: Update local ssh config
+      blockinfile:
+        path: ~/.ssh/config
+        block: >
+          Host {{app_details["name"]}}-{{(inventory_hostname | regex_replace('[:.]', ':')).split(':')[-1]}}
+            Hostname {{inventory_hostname}}
+            AddKeysToAgent yes
+            IdentityFile {{local_ssh_key_paths["private"]}}
+            User {{domain["user"]}}
+      delegate_to: localhost
+    - name: Add key to local agent
+      command: 'ssh-add {{local_ssh_key_paths["private"]}}'
+      delegate_to: localhost
+    # - name: Add to known hosts
+    #   known_hosts:
+    #     name: '[{{ inventory_hostname }}]:{{domain["port"]}}'
+    #     key: '[{{ inventory_hostname }}]:{{domain["port"]}} {{user_info.ssh_public_key}}'
+    #   delegate_to: localhost
