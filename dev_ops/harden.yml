@@ -32,6 +32,9 @@
       meta: end_play
       when: port_check is defined and
         port_check.state|default(omit) == "stopped"
+    - name: Check if we actually can reach server
+      ping:
+      ignore_unreachable: false
 
 
   tasks:
