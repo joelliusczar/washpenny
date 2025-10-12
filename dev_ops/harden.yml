@@ -32,15 +32,12 @@
       meta: end_play
       when: port_check is defined and
         port_check.state|default(omit) == "stopped"
-    - name: Check if we actually can reach server
-      ping:
-      vars:
-        ansible_port: '{{domain["port"]}}'
-        ansible_user: '{{domain["user"]}}'
-      ignore_unreachable: false
 
 
   tasks:
+    - name: Define host name
+      set_fact:
+        config_host_name: '{{app_details["name"]}}-{{(inventory_hostname | regex_replace("[:.]", ":")).split(":")[-1]}}'
     - name: Add group
       become: true
       group:
@@ -53,12 +50,13 @@
         generate_ssh_key: true
         ssh_key_type: 'ed25519'
         shell: /bin/bash
+        ssh_key_comment: 'ansible-generated for {{config_host_name}}'
       register: user_info
     - name: Define local ssh key paths
       set_fact:
         local_ssh_key_paths:
-          private: '~/.ssh/{{app_details["name"]}}_{{domain["user"]}}_{{inventory_hostname}}_ssh.private.key'
-          public: '~/.ssh/{{app_details["name"]}}_{{domain["user"]}}_{{inventory_hostname}}_ssh.public.key'
+          private: '~/.ssh/{{config_host_name}}_nr_ssh.private.key'
+          public: '~/.ssh/{{config_host_name}}_nr_ssh.public.key'
     - name: Save the ssh key
       fetch:
         src: '{{user_info.ssh_key_file}}'
@@ -98,9 +96,6 @@
         - regexp: '^Port'
           line: 'Port {{domain["port"]}}'
       notify: restart ssh
-    - name: Define host name
-      set_fact:
-        config_host_name: '{{app_details["name"]}}-{{(inventory_hostname | regex_replace("[:.]", ":")).split(":")[-1]}}'
     - name: Update local ssh config
       blockinfile:
         path: ~/.ssh/config
