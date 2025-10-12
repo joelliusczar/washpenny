@@ -8,6 +8,7 @@
     test_trunk: '../test_trash/{{app_details["name"]}}'
     ansible_port: 22
     ansible_user: root
+    ansible_ssh_private_key_file: '{{intro_private_key}}'
 
   vars_files:
     - vars/vault.yml
@@ -95,15 +96,20 @@
         - regexp: '^Port'
           line: 'Port {{domain["port"]}}'
       notify: restart ssh
+    - name: Define host name
+      set_fact:
+        config_host_name: '{{app_details["name"]}}-{{(inventory_hostname | regex_replace("[:.]", ":")).split(":")[-1]}}'
     - name: Update local ssh config
       blockinfile:
         path: ~/.ssh/config
+        marker: '# {mark} ANSIBLE - {{config_host_name|upper}}'
         block: >
-          Host {{app_details["name"]}}-{{(inventory_hostname | regex_replace('[:.]', ':')).split(':')[-1]}}
+          Host {{config_host_name}} 
             Hostname {{inventory_hostname}}
             AddKeysToAgent yes
             IdentityFile {{local_ssh_key_paths["private"]}}
             User {{domain["user"]}}
+            IdentitiesOnly yes
       delegate_to: localhost
     - name: Add key to local agent
       command: 'ssh-add {{local_ssh_key_paths["private"]}}'
