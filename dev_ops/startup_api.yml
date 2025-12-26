@@ -92,6 +92,9 @@
         src: ../src/client/
         delete: true
         dest: '{{item["client_dir"]}}'
+      loop: '{{env_list}}'
+      loop_control:
+        label: '{{item.name}}'
     - name: Create directories
       file:
         path: '{{item}}'
