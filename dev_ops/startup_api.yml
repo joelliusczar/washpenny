@@ -102,7 +102,7 @@
     - name: Copy client files
       become: true
       synchronize:
-        src: ../src/client/
+        src: ../src/client
         delete: true
         dest: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}'
     - name: Copy web app keys
