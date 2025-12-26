@@ -113,7 +113,6 @@
           DSF_NAMESPACE_UUID='{{keys["namespace_uuid"]}}'
           DSF_AUTH_SECRET_KEY='{{keys["auth_secret_key"]}}'
           DSF_BACK_KEY='{{keys["back_key"]}}'
-      notify: Restart API
     - name: Nginx setup
       include_role:
         name: nginx-setup
