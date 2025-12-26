@@ -1,0 +1,9 @@
+---
+dev_files:
+  openssl_default_config: /etc/ssl/openssl.cnf
+  mysql_socket: /var/run/mysqld/mysqld.sock
+  cert_src: /etc/ssl/certs/ca-certificates.crt
+dev_dirs:
+  ssh: ~/.ssh
+  certs: /usr/local/share/ca-certificates
+  web_root: /srv

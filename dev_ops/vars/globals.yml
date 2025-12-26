@@ -2,13 +2,13 @@
 app_details:
   name: washpenny
   prefix: WSPN
-  engine: musical_chairs_libs
+  engine: ''
   api_version: v1
 src_dirs:
-  engine: ../src/musical_chairs_libs
+  engine: ''
   templates: files
 dest_dirs:
-  engine_dir_name: musical_chairs_libs
+  engine_dir_name: ''
 tech:
   api_lang: ''
   db: ''

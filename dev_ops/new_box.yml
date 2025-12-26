@@ -1,0 +1,10 @@
+---
+- import_playbook: harden.yml
+- hosts: all
+  tasks:
+    - name: Flag as original host
+      set_fact:
+        original_host: true
+- import_playbook: setup_service_user.yml
+- import_playbook: startup_api.yml
+- import_playbook: setup_schedules.yml

@@ -1,0 +1,36 @@
+---
+- hosts: all
+
+
+  vars:
+    app_trunk: '{{domain["app_root"]|default("~")}}/{{app_details["name"]}}'
+    test_trunk: '../test_trash/{{app_details["name"]}}'
+    ansible_common_remote_group: '{{domain["group"]}}'
+
+
+  vars_files:
+    - vars/vault.yml
+    - vars/globals.yml
+    - vars/os_paths.yml
+  
+  pre_tasks:
+    - include_vars: "{{ item }}"
+      with_first_found:
+        - 'vars/packages/vars_{{ansible_distribution}}{{ansible_distribution_major_version}}.yml'
+    - include_vars: 
+        file: 'vars/vault.yml'
+        hash_behaviour: merge
+    - include_vars: 
+        file: 'vars/local_keys.yml'
+        hash_behaviour: merge
+      when: inventory_hostname in ["127.0.0.1", "localhost"]
+
+  tasks:
+    - name: Modify server access
+      include_role:
+        name: service-user-setup
+      vars:
+        server_user: '{{domain["server_user"]}}'
+        app_user: '{{domain["user"]}}'
+        app_group: '{{domain["group"]}}'
+        access_port: '{{domain["port"]}}'

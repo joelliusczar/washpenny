@@ -1,46 +1,65 @@
 ---
 - hosts: all
 
+
   vars:
-    app_trunk: '{{dest_dirs["app_root"]|default("~")}}/{{app_details["name"]}}'
+    app_trunk: '{{domain["app_root"]|default("~")}}/{{app_details["name"]}}'
     test_trunk: '../test_trash/{{app_details["name"]}}'
+    #ansible_common_remote_group is needed for become_user: notroot to work
+    ansible_common_remote_group: '{{domain["group"]}}'
+
 
   vars_files:
     - vars/vault.yml
     - vars/globals.yml
+    - vars/os_paths.yml
+
 
   pre_tasks:
     - name: Check that latest is pushed up.
       include_role:
         name: repo-check
+      when: hostvars.localhost.skip_to_exit is not defined
     - name: End early?
       meta: end_play
       when: hostvars.localhost.skip_to_exit|default(omit) == true
     - include_vars: "{{ item }}"
       with_first_found:
-        - 'vars/os_vars_default.yml'
-    - include_vars: 'vars/vault.yml'
+        - 'vars/packages/vars_{{ansible_distribution}}{{ansible_distribution_major_version}}.yml'
+    - include_vars: 
+        file: 'vars/vault.yml'
+        hash_behaviour: merge
+    - include_vars: 
+        file: 'vars/local_keys.yml'
+        hash_behaviour: merge
+      when: inventory_hostname in ["127.0.0.1", "localhost"]
+    - name: Update apt cache if needed
+      apt: update_cache=true cache_valid_time=3600
+      become: true
+      when: ansible_os_family == "Debian"
+    - name: Install rsync
+      become: true
+      package:
+        name: rsync
+    - name: Install Chrony
+      become: true
+      package:
+        name: '{{packages["chrony"]}}'
+    - name: Ensure chrony is running.
+      service:
+        name: chronyd
+        state: started
+        enabled: true
     - name: Set local server settings
       set_fact:
         env_list:
-        - name: "model" 
+        - name: "model" #api and client delivered from nginx
           port: 8033
           url: 'https://{{url_segments["base"]}}-model.{{url_segments["tld"]}}:8080'
           client_dir: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}/client-model/'
           server_name: '{{url_segments["base"]}}-model.{{url_segments["tld"]}}'
           common_name: '{{url_segments["base"]}}-model.{{url_segments["tld"]}}'
-        - name: "rebug"
-          port: 8032
-          url: 'https://{{url_segments["base"]}}-rebug.{{url_segments["tld"]}}:8080'
-          client_dir: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}/client-rebug/'
-          server_name: '{{url_segments["base"]}}-rebug.{{url_segments["tld"]}}'
-          common_name: '{{url_segments["base"]}}-rebug.{{url_segments["tld"]}}'
-        - name: "debug"
-          port: 8032
-          url: 'localhost'
-          client_dir: ''
-          server_name: ''
-          common_name: 'localhost'
+          ssh_dir: '{{dev_dirs["ssh"]|expanduser}}'
       when: inventory_hostname in ["127.0.0.1", "localhost"]
     - name: Set remote server settings
       set_fact:
@@ -51,28 +70,64 @@
             client_dir: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}/client/'
             server_name: '{{url_segments["base"]}}.{{url_segments["tld"]}}'
             common_name: ''
+            ssh_dir: ''
       when: ansible_host not in ["127.0.0.1", "localhost"] and not "192.168.0.0/16"|ansible.utils.network_in_usable(ansible_host)
+    - name: Set VM server settings
+      set_fact:
+        env_list:
+          - name: "vm"
+            port: 8033
+            url: 'https://{{url_segments["base"]}}-vm.{{url_segments["tld"]}}'
+            client_dir: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}/client/'
+            server_name: '{{url_segments["base"]}}-vm.{{url_segments["tld"]}}'
+            common_name: '{{url_segments["base"]}}-vm.{{url_segments["tld"]}}'
+            ssh_dir: ''
+      when: ansible_host not in ["127.0.0.1", "localhost"] and "192.168.0.0/16"|ansible.utils.network_in_usable(ansible_host)
+
 
   tasks:
-    - name: Nginx setup
-      include_role:
-        name: nginx-setup
-      vars:
-        env_name: '{{item["name"]}}'
-        server_name: '{{item["server_name"]}}'
-        api_port: '{{item["port"]}}'
-        common_name: '{{item["common_name"]}}'
-        ssh_dir: '{{dev_dirs["ssh"]|expanduser()}}'
-        serve_dir: '{{item["client_dir"]}}'
-      loop: '{{env_list}}'
-    - name: Create serving directory
-      file:
-        path: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}'
-        state: directory
     - name: Copy client files
       become: true
       synchronize:
         src: ../src/client/
         delete: true
         dest: '{{item["client_dir"]}}'
+    - name: Create directories
+      file:
+        path: '{{item}}'
+        state: directory
+        owner: '{{domain["server_user"]}}'
+        group: '{{domain["group"]}}'
+        mode: 'g+w'
+      no_log: true
+      become: true
+      loop:
+        - '{{app_trunk}}'
+        - '{{domain["exports_dir"]}}'
+        - '/home/{{domain["server_user"]}}/scripts'
+    - name: Copy web app keys
+      copy:
+        dest: '{{domain["exports_dir"]}}/{{domain["envs"]["web_app_key"]}}'
+        content: |
+          DSF_APP_ROOT='{{app_trunk}}'
+          DSF_NAMESPACE_UUID='{{keys["namespace_uuid"]}}'
+          DSF_AUTH_SECRET_KEY='{{keys["auth_secret_key"]}}'
+          DSF_BACK_KEY='{{keys["back_key"]}}'
+      notify: Restart API
+    - name: Nginx setup
+      include_role:
+        name: nginx-setup
+      vars:
+        env_name: '{{item["name"]}}'
+        server_name: '{{item["server_name"]}}'
+        app_prefix: '{{app_details["name"]|to_snake()}}'
+        api_port: '{{item["port"]}}'
+        common_name: '{{item["common_name"]}}'
+        ssh_dir: '{{item["ssh_dir"]}}'
+        serve_dir: '{{item["client_dir"]}}'
       loop: '{{env_list}}'
+      loop_control:
+        label: '{{item.name}}'
+
+
+

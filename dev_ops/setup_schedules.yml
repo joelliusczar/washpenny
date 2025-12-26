@@ -1,0 +1,60 @@
+---
+- hosts: all
+
+  vars:
+    app_trunk: '{{domain["app_root"]|default("~")}}/{{app_details["name"]}}'
+    ansible_common_remote_group: '{{domain["group"]}}'
+
+  vars_files:
+    - vars/vault.yml
+    - vars/globals.yml
+
+  tasks:
+    - name: Create directories
+      file:
+        path: '{{item}}'
+        state: directory
+        owner: '{{domain["server_user"]}}'
+        group: '{{domain["group"]}}'
+        mode: 'g+w'
+      no_log: true
+      become: true
+      loop:
+        - '{{domain["exports_dir"]}}'
+        - '/home/{{domain["server_user"]}}/scripts'
+    - name: Copy pb keys
+      copy:
+        dest: '{{domain["exports_dir"]}}/{{domain["envs"]["refresh_certs_key"]}}'
+        owner: '{{domain["server_user"]}}'
+        group: '{{domain["group"]}}'
+        content: |
+          PB_API_KEY='{{keys["pb_api_key"]}}'
+          PB_SECRET='{{keys["pb_secret"]}}'
+      become: true
+    - name: Copy the refresh certs script
+      copy: 
+        src: scripts/refresh_certs.py
+        dest: /home/{{domain["server_user"]}}/scripts/refresh_certs.py
+        owner: '{{domain["server_user"]}}'
+        group: '{{domain["group"]}}'
+      become: true
+    - name: Refresh certs extra vars
+      set_fact:
+        app_python: '{{app_trunk}}/{{app_details["prefix"]|lower}}_env/bin/python'
+        py_script: '/home/{{domain["server_user"]}}/scripts/refresh_certs.py'
+        app_url_base: '{{url_segments["base"]}}.{{url_segments["tld"]}}'
+        public_key_path: '/etc/ssl/certs/{{app_details["name"]|to_snake()}}.public.key.pem'
+        private_key_path: '/etc/ssl/private/{{app_details["name"]|to_snake()}}.private.key.pem'
+    - name: Schedule cert refresh
+      include_role:
+        name: service-setup
+      vars:
+        service_name: refresh-certs
+        service_owner: root
+        service_group: root
+        service_scope: system
+        service_description: Refetch the ssl certs
+        env_file: '{{domain["exports_dir"]}}/{{domain["envs"]["refresh_certs_key"]}}'
+        service_command: python3 '{{py_script}}' '{{app_url_base}}' '{{public_key_path}}' '{{private_key_path}}'
+        schedule: '*-*-* 9:17:00' #utc I think?
+
