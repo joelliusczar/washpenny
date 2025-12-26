@@ -86,15 +86,6 @@
 
 
   tasks:
-    - name: Copy client files
-      become: true
-      synchronize:
-        src: ../src/client/
-        delete: true
-        dest: '{{item["client_dir"]}}'
-      loop: '{{env_list}}'
-      loop_control:
-        label: '{{item.name}}'
     - name: Create directories
       file:
         path: '{{item}}'
@@ -108,6 +99,12 @@
         - '{{app_trunk}}'
         - '{{domain["exports_dir"]}}'
         - '/home/{{domain["server_user"]}}/scripts'
+    - name: Copy client files
+      become: true
+      synchronize:
+        src: ../src/client/
+        delete: true
+        dest: '{{dev_dirs["web_root"]}}/{{app_details["name"]}}'
     - name: Copy web app keys
       copy:
         dest: '{{domain["exports_dir"]}}/{{domain["envs"]["web_app_key"]}}'
