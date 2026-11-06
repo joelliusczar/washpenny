@@ -1,3 +1,0 @@
-source "https://rubygems.org"
-
-gem "salad_prep", git: "https://github.com/joelliusczar/salad_prep"

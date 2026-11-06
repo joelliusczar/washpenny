@@ -124,6 +124,7 @@
         common_name: '{{item["common_name"]}}'
         ssh_dir: '{{item["ssh_dir"]}}'
         serve_dir: '{{item["client_dir"]}}'
+        root_config: '{{dev_files["nginx_root_config"]}}'
       loop: '{{env_list}}'
       loop_control:
         label: '{{item.name}}'
