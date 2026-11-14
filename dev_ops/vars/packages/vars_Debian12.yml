@@ -7,6 +7,7 @@ packages:
   icecast: icecast2
   git: git
   chrony: chrony
+  fail2ban: fail2ban
   ices_dependencies:
     libtool: libtool-bin
     build_essential: build-essential

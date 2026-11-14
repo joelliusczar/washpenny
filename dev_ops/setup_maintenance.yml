@@ -29,6 +29,8 @@
     - name: Setup fail2ban
       include_role:
         name: fail2ban-setup
+      vars:
+        install_name: packages["fail2ban"]
     - name: Setup docker
       include_role:
         name: docker-setup
