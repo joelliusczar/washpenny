@@ -1,3 +1,4 @@
 ---
+- import_playbook: setup_maintenance.yml
 - import_playbook: startup_api.yml
 - import_playbook: setup_schedules.yml

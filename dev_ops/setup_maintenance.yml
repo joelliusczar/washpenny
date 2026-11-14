@@ -1,0 +1,35 @@
+---
+- hosts: all
+
+  vars_files:
+    - vars/vault.yml
+    - vars/globals.yml
+
+  vars:
+    is_local: '{{inventory_hostname in ["127.0.0.1", "localhost"]}}'
+
+  pre_tasks:
+    - name: Check that latest is pushed up.
+      include_role:
+        name: repo-check
+      when: hostvars.localhost.skip_to_exit is not defined and not is_local
+    - name: End early?
+      meta: end_play
+      when: hostvars.localhost.skip_to_exit|default(omit) == true
+    - include_vars: "{{ item }}"
+      with_first_found:
+        - 'vars/packages/vars_{{ansible_distribution}}{{ansible_distribution_major_version}}.yml'
+
+  tasks:
+    - name: Copy configs and scripts for server maintenance
+      include_role:
+        name: maintenance-helper-setup
+      vars:
+        mt_user: '{{domain["user"]}}'
+    - name: Setup fail2ban
+      include_role:
+        name: fail2ban-setup
+    - name: Setup docker
+      include_role:
+        name: docker-setup
+
